@@ -11,11 +11,15 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Cho phép mọi localhost (bất kỳ port nào) và không có origin (curl, Postman)
-      if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+      if (!origin || /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
         return callback(null, true);
       }
-      const allowed = process.env.FRONTEND_URL;
-      if (allowed && origin === allowed) return callback(null, true);
+      // FRONTEND_URL có thể là danh sách cách nhau bởi dấu phẩy
+      const allowed = (process.env.FRONTEND_URL || '')
+        .split(',')
+        .map((u) => u.trim())
+        .filter(Boolean);
+      if (allowed.includes(origin)) return callback(null, true);
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
