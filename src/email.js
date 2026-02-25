@@ -1,20 +1,14 @@
-const nodemailer = require('nodemailer');
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const { Resend } = require('resend');
 
 const paymentLabel = { cod: 'Thanh toán khi nhận hàng (COD)', bank: 'Chuyển khoản ngân hàng', momo: 'Ví MoMo' };
 
 const sendOrderNotification = async (order) => {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('⚠️  SMTP chưa cấu hình, bỏ qua gửi email.');
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️  RESEND_API_KEY chưa cấu hình, bỏ qua gửi email.');
     return;
   }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const subject = `🛒 Đơn hàng mới #${order.id} – ${order.customer_name}`;
 
@@ -94,12 +88,14 @@ const sendOrderNotification = async (order) => {
 </body>
 </html>`;
 
-  await transporter.sendMail({
-    from: `"Cashew Essence" <${process.env.SMTP_USER}>`,
+  const { error } = await resend.emails.send({
+    from: 'Cashew Essence <onboarding@resend.dev>',
     to: process.env.ADMIN_EMAIL,
     subject,
     html,
   });
+
+  if (error) throw new Error(error.message);
 
   console.log(`📧 Email thông báo đơn #${order.id} đã gửi tới ${process.env.ADMIN_EMAIL}`);
 };
